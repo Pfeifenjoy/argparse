@@ -13,20 +13,22 @@
 #include "argparse/arguments.h"
 #include "argparse/context.h"
 
-struct command {
+typedef void(*command_set_t)(const context_t *);
+
+typedef struct command {
 	const char *name;
 	const char *version;
 	void *context;
-	struct optionals optionals;
-	struct arguments arguments;
-	struct arguments optional_arguments;
-	void(*set)(const struct context *);
-};
+	optionals_t optionals;
+	arguments_t arguments;
+	arguments_t optional_arguments;
+	command_set_t set;
+} command_t;
 
-void command_init(struct command *, const char *name, const char *version);
+void command_init(command_t *, const char *name, const char *version);
 
 void command_flag(
-	struct command *,
+	command_t *,
 	char short_name,
 	const char *long_name,
 	const char *description,
@@ -34,7 +36,7 @@ void command_flag(
 );
 
 void command_optional(
-	struct command *,
+	command_t *,
 	char short_name,
 	const char *long_name,
 	const char *description,
@@ -42,33 +44,33 @@ void command_optional(
 );
 
 void command_argument(
-	struct command *,
+	command_t *,
 	char *
 );
 
 void command_add_argument(
-	struct command *,
-	struct argument
+	command_t *,
+	argument_t
 );
 
 void command_optional_argument(
-	struct command *,
+	command_t *,
 	char *
 );
 
 void command_add_optional_argument(
-	struct command *,
-	struct argument
+	command_t *,
+	argument_t
 );
 
 void command_parse(
-	const struct command *,
+	const command_t *,
 	size_t argc,
 	const char **argv
 );
 
-void command_print_help(const struct command *);
+void command_print_help(const command_t *);
 
-void command_destroy(struct command *);
+void command_destroy(command_t *);
 
 #endif /* end of include guard: ARGPARSE_H_QMPV58OX */

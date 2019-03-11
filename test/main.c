@@ -13,7 +13,7 @@
 #include "errno.h"
 
 typedef struct {
-	struct command command;
+	command_t command;
 } fixture_t;
 
 static void program_setup(fixture_t *fixture, gconstpointer _) {
@@ -56,7 +56,8 @@ static void test_unknown_option(fixture_t *fixture, gconstpointer _) {
 
 	g_test_trap_subprocess(NULL, 0, 0);
 	g_test_trap_assert_failed();
-	g_test_trap_assert_stdout("Unknown option: -a\n");
+	g_test_trap_assert_stderr("Unknown option: -a\n");
+	g_test_trap_assert_stdout("");
 }
 
 typedef struct {
@@ -64,12 +65,12 @@ typedef struct {
 	bool b;
 } mult_opt_context_t;
 
-static void a_set(const struct context *_context) {
+static void a_set(const context_t *_context) {
 	mult_opt_context_t *context = (mult_opt_context_t *) _context->command->context;
 	context->a = true;
 }
 
-static void b_set(const struct context *_context) {
+static void b_set(const context_t *_context) {
 	mult_opt_context_t *context = (mult_opt_context_t *) _context->command->context;
 	context->b = true;
 }
@@ -77,17 +78,34 @@ static void b_set(const struct context *_context) {
 static void test_multiple_option(fixture_t *fixture, gconstpointer _) {
 	mult_opt_context_t context;
 	fixture->command.context = &context;
-	if(g_test_subprocess()) {
-		command_flag(&fixture->command, 'a', "a", "", a_set);
-		command_flag(&fixture->command, 'b', "b", "", b_set);
-		const char *argv[] = { "program", "-ab" };
-		command_parse(&fixture->command, 2, argv);
-	}
 
-	g_test_trap_subprocess(NULL, 0, 0);
-	g_test_trap_assert_passed();
+	command_flag(&fixture->command, 'a', "a", "", a_set);
+	command_flag(&fixture->command, 'b', "b", "", b_set);
+	const char *argv[] = { "program", "-ab" };
+	command_parse(&fixture->command, 2, argv);
+
 	g_assert_true(context.a);
 	g_assert_true(context.b);
+}
+
+typedef struct {
+	bool flag_set;
+} long_name_context_t;
+
+static void long_name_set(const context_t *_context) {
+	long_name_context_t *context = (long_name_context_t *) _context->command->context;
+	context->flag_set = true;
+}
+
+static void test_long_option_name(fixture_t *fixture, gconstpointer _) {
+	long_name_context_t context;
+	fixture->command.context = &context;
+
+	command_flag(&fixture->command, 'f', "flag-name", "", long_name_set);
+	const char *argv[] = { "program", "--flag-name" };
+	command_parse(&fixture->command, 2, argv);
+
+	g_assert_true(context.flag_set);
 }
 
 int main(int argc, char **argv) {
@@ -100,6 +118,8 @@ int main(int argc, char **argv) {
 			fixture_t, NULL, program_setup, test_unknown_option, program_teardown);
 	g_test_add("/command/multiple-flags",
 			fixture_t, NULL, program_setup, test_multiple_option, program_teardown);
+	g_test_add("/command/long-option-name",
+			fixture_t, NULL, program_setup, test_long_option_name, program_teardown);
 	return g_test_run();
 }
 

@@ -5,13 +5,13 @@
 
 #include "stdlib.h"
 
-struct arguments {
-	struct argument *data;
+typedef struct {
+	argument_t *data;
 	size_t size;
-};
+} arguments_t;
 
-void arguments_init(struct arguments *);
-void arguments_add(struct arguments *, struct argument);
-void arguments_destroy(struct arguments *);
+void arguments_init(arguments_t *);
+void arguments_add(arguments_t *, argument_t);
+void arguments_destroy(arguments_t *);
 
 #endif /* end of include guard: ARGUMENTS_H_XUL1CTIC */

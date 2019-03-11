@@ -3,10 +3,11 @@
 
 #include "argparse/vector.h"
 
-struct command;
-struct context {
-	const struct command *command;
-	const struct s_vector *arguments;
-};
+typedef struct command command_t;
+
+typedef struct {
+	const command_t *command;
+	const s_vector_t *arguments;
+} context_t;
 
 #endif /* end of include guard: CONTEXT_H_RDHFPUN5 */

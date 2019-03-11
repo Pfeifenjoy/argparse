@@ -3,12 +3,12 @@
 
 #include "string.h"
 
-void s_vector_init(struct s_vector *vector) {
+void s_vector_init(s_vector_t *vector) {
 	vector->data = NULL;
 	vector->length = 0;
 }
 
-void s_vector_add(struct s_vector *vector, const char *element) {
+void s_vector_add(s_vector_t *vector, const char *element) {
 	char *my_element = (char *) allocate(strlen(element) + 1, sizeof(char));
 	strcpy(my_element, element);
 	vector->length++;
@@ -16,7 +16,7 @@ void s_vector_add(struct s_vector *vector, const char *element) {
 	vector->data[vector->length - 1] = my_element;
 }
 
-void s_vector_destroy(struct s_vector *vector) {
+void s_vector_destroy(s_vector_t *vector) {
 	for(size_t i = 0; i < vector->length; ++i) {
 		free(vector->data[i]);
 	}

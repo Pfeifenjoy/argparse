@@ -10,14 +10,28 @@
 /* Local structs                                            */
 /************************************************************/
 
-struct parse_context {
+typedef struct {
 	size_t position;
 	size_t argc;
 	const char **argv;
-};
+} parse_context_t;
 
 /************************************************************/
-/* Help                                                     */
+/* Default handlers                                         */
+/************************************************************/
+
+static void help_set(const context_t *context) {
+	command_print_help(context->command);
+	exit(EXIT_SUCCESS);
+}
+
+static void version_set(const context_t *context) {
+	printf("%s\n", context->command->version);
+	exit(EXIT_SUCCESS);
+}
+
+/************************************************************/
+/* Helper functions                                         */
 /************************************************************/
 static void print_description(const char *description) {
 	int i = 0;
@@ -37,7 +51,149 @@ static void print_description(const char *description) {
 	printf("\n");
 }
 
-void command_print_help(const struct command *command) {
+static void optional_check_argument(
+		const optional_t *optional,
+		const argument_t *argument,
+		const char *value
+	) {
+
+	if(value[0] == '-') {
+		fprintf(stderr, "Unexpected option: %s", value);
+		exit(EXIT_FAILURE);
+	} else if(argument->test != NULL && !argument->test(value)) {
+		fprintf(stderr, "Unexpected argument <%s> for --%s.",
+				argument->name, optional->long_name);
+		exit(EXIT_FAILURE);
+	}
+}
+
+static void command_optional_parse_arguments(
+		const command_t *command,
+		const optional_t *optional,
+		parse_context_t *context
+	) {
+	s_vector_t arguments;
+	s_vector_init(&arguments);
+
+	//required arguments
+	for(size_t i = 0; i < optional->arguments.size; ++i) {
+		const char *current = context->argv[context->position + i];
+
+		if(context->position + i >= context->argc) {
+			fprintf(stderr, "Missing argument <%s> for --%s.",
+					optional->arguments.data[i].name, optional->long_name);
+			exit(EXIT_FAILURE);
+		}
+
+		optional_check_argument(optional, optional->arguments.data + i, current);
+		s_vector_add(&arguments, current);
+	}
+	context->position += optional->arguments.size;
+
+	//optional arguments
+	for(size_t i = 0; i < optional->optional_arguments.size; ++i) {
+		const char *current = context->argv[context->position + i];
+
+		if(context->position + i >= context->argc || current[0] == '-') {
+			break;
+		}
+
+		optional_check_argument(optional, optional->arguments.data + i, current);
+		s_vector_add(&arguments, current);
+
+		context->position++;
+	}
+
+
+	context_t o_set_context = {
+		.command = command,
+		.arguments = &arguments
+	};
+
+	optional->set(&o_set_context);
+
+	s_vector_destroy(&arguments);
+}
+
+static void command_parse_short_optional(
+		const command_t *command,
+		parse_context_t *context
+	) {
+	//array of short names
+	const char *flags = context->argv[context->position] + 1;
+	context->position++;
+
+	for(size_t i = 0; flags[i] != '\0'; ++i) {
+		bool matched = false;
+
+		//search for flag
+		for(size_t j = 0; j < command->optionals.size; ++j) {
+			optional_t *optional = command->optionals.data + j;
+			matched = optional->short_name == flags[i];
+
+			if(matched) {
+				command_optional_parse_arguments(command, optional, context);
+				break;
+			}
+		}
+
+		//if no match is found -> error
+		if(!matched) {
+			fprintf(stderr, "Unknown option: -%c\n", flags[i]);
+			exit(EXIT_FAILURE);
+		}
+	}
+}
+
+static void command_parse_long_optional(
+		const command_t *command,
+		parse_context_t *context
+	) {
+	const char *name = context->argv[context->position] + 2;
+
+	for(size_t i = 0; command->optionals.size; ++i) {
+		optional_t *option = command->optionals.data + i;
+		if(strcmp(name, option->long_name) == 0) {
+			context->position++;
+			command_optional_parse_arguments(command, option, context);
+			return;
+		}
+	}
+
+	fprintf(stderr, "Unknown option: --%s\n", name);
+	exit(EXIT_FAILURE);
+}
+
+static void command_parse_optional(
+		const command_t *command,
+		parse_context_t *context
+	) {
+	if(context->argv[context->position][1] == '-') {
+		command_parse_long_optional(command, context);
+	} else {
+		command_parse_short_optional(command, context);
+	}
+}
+
+/************************************************************/
+/* Interface                                                */
+/************************************************************/
+
+void command_init(
+		command_t * command,
+		const char *name,
+		const char *version
+	) {
+	command->name = name;
+	command->version = version;
+	optionals_init(&command->optionals);
+	arguments_init(&command->arguments);
+	arguments_init(&command->optional_arguments);
+	command_flag(command, 'h', "help", "Display help message.", help_set);
+	command_flag(command, 'V', "version", "Display the version.", version_set);
+}
+
+void command_print_help(const command_t *command) {
 	printf(
 		"\n"
 		"  Usage: %s [options]"
@@ -75,26 +231,8 @@ void command_print_help(const struct command *command) {
 	printf("\n");
 }
 
-/************************************************************/
-/* Default handlers                                         */
-/************************************************************/
-
-static void help_set(const struct context *context) {
-	command_print_help(context->command);
-	exit(EXIT_SUCCESS);
-}
-
-static void version_set(const struct context *context) {
-	printf("%s\n", context->command->version);
-	exit(EXIT_SUCCESS);
-}
-
-/************************************************************/
-/* setters                                                  */
-/************************************************************/
-
 void command_flag(
-		struct command * command,
+		command_t * command,
 		char short_name,
 		const char *long_name,
 		const char *description,
@@ -110,13 +248,13 @@ void command_flag(
 }
 
 void command_optional(
-		struct command * command,
+		command_t * command,
 		char short_name,
 		const char *long_name,
 		const char *description,
 		optional_set_t set
 	) {
-	struct optional optional;
+	optional_t optional;
 	optional_init(&optional);
 	optional.short_name = short_name;
 	optional.long_name = long_name;
@@ -126,149 +264,51 @@ void command_optional(
 }
 
 void command_argument(
-		struct command *command,
+		command_t *command,
 		char *name
 	) {
-	struct argument argument;
+	argument_t argument;
 	argument.name = name;
 	command_add_argument(command, argument);
 }
 
 void command_add_argument(
-		struct command *command,
-		struct argument argument
+		command_t *command,
+		argument_t argument
 	) {
 	arguments_add(&command->arguments, argument);
 }
 
 void command_optional_argument(
-		struct command *command,
+		command_t *command,
 		char *name
 	) {
-	struct argument argument;
+	argument_t argument;
 	argument.name = name;
 	command_add_optional_argument(command, argument);
 }
 
 void command_add_optional_argument(
-		struct command *command,
-		struct argument argument
+		command_t *command,
+		argument_t argument
 	) {
 	arguments_add(&command->optional_arguments, argument);
 }
 
-/************************************************************/
-/* Helper functions                                         */
-/************************************************************/
-
-static void optional_check_argument(
-		const struct optional *optional,
-		const struct argument *argument,
-		const char *value
-	) {
-
-	if(value[0] == '-') {
-		fprintf(stderr, "Unexpected option: %s", value);
-		exit(EXIT_FAILURE);
-	} else if(argument->test != NULL && !argument->test(value)) {
-		fprintf(stderr, "Unexpected argument <%s> for --%s.",
-				argument->name, optional->long_name);
-		exit(EXIT_FAILURE);
-	}
-}
-
-static void command_optional_parse_arguments(
-		const struct command *command,
-		const struct optional *optional,
-		struct parse_context *context
-	) {
-	struct s_vector arguments;
-	s_vector_init(&arguments);
-
-	//required arguments
-	for(size_t i = 0; i < optional->arguments.size; ++i) {
-		const char *current = context->argv[context->position + i];
-
-		if(context->position + i >= context->argc) {
-			fprintf(stderr, "Missing argument <%s> for --%s.",
-					optional->arguments.data[i].name, optional->long_name);
-			exit(EXIT_FAILURE);
-		}
-
-		optional_check_argument(optional, optional->arguments.data + i, current);
-		s_vector_add(&arguments, current);
-	}
-	context->position += optional->arguments.size;
-
-	//optional arguments
-	for(size_t i = 0; i < optional->optional_arguments.size; ++i) {
-
-		const char *current = context->argv[context->position + i];
-
-		if(context->position + i >= context->argc || current[0] == '-') {
-			break;
-		}
-
-		optional_check_argument(optional, optional->arguments.data + i, current);
-		s_vector_add(&arguments, current);
-
-		context->position++;
-	}
-
-
-	struct context o_set_context = {
-		.command = command,
-		.arguments = &arguments
-	};
-
-	optional->set(&o_set_context);
-
-	s_vector_destroy(&arguments);
-}
-
-static void command_parse_optional(
-		const struct command *command,
-		struct parse_context *context
-	) {
-	bool long_optional = context->argv[context->position][1] == '-';
-	const char *name = context->argv[context->position]
-		+ (long_optional ? 2 : 1);
-
-	for(size_t i = 0; i < command->optionals.size; ++i) {
-		struct optional *optional = &command->optionals.data[i];
-		if((long_optional && strcmp(name, optional->long_name))
-		|| (!long_optional && *name == optional->short_name)) {
-			//found match
-
-			context->position++;
-			command_optional_parse_arguments(command, optional, context);
-
-			return;
-		}
-	}
-
-	printf("Unknown option: %s\n", context->argv[context->position]);
-	exit(EXIT_FAILURE);
-}
-
-/************************************************************/
-/* General functions                                        */
-/************************************************************/
-
 void command_parse(
-		const struct command *command,
+		const command_t *command,
 		size_t argc,
 		const char **argv
 	) {
 
-	struct parse_context context = {
+	parse_context_t context = {
 		.position = 0,
 		.argc = argc,
 		.argv = argv
 	};
 
 	size_t argument_position = 0;
-	struct s_vector arguments;
+	s_vector_t arguments;
 	s_vector_init(&arguments);
 
 	for(context.position = 1; context.position < context.argc;) {
@@ -286,35 +326,19 @@ void command_parse(
 		}
 	}
 
-	struct context command_context = {
+	context_t command_context = {
 		.command = command,
 		.arguments = &arguments
 	};
-	command->set(&command_context);
+
+	if(command->set != NULL) {
+		command->set(&command_context);
+	}
 
 	s_vector_destroy(&arguments);
 }
 
-/************************************************************/
-/* Allocation functions                                     */
-/************************************************************/
-
-void command_init(
-		struct command * command,
-		const char *name,
-		const char *version
-	) {
-	command->name = name;
-	command->version = version;
-	optionals_init(&command->optionals);
-	arguments_init(&command->arguments);
-	arguments_init(&command->optional_arguments);
-	command_flag(command, 'h', "help", "Display help message.", help_set);
-	command_flag(command, 'V', "version", "Display the version.", version_set);
-}
-
-
-void command_destroy(struct command *command) {
+void command_destroy(command_t *command) {
 	optionals_destroy(&command->optionals);
 	arguments_destroy(&command->arguments);
 	arguments_destroy(&command->optional_arguments);
