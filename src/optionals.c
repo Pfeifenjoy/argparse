@@ -11,12 +11,15 @@ void optionals_add(
 	struct optional optional
 ) {
 	optionals->size++;
-	optionals->data = 
+	optionals->data = (struct optional *)
 		reallocate(optionals->data, optionals->size, sizeof(struct optional));
 	optionals->data[optionals->size - 1] = optional;
 }
 
 void optionals_destroy(struct optionals *optionals) {
+	for(size_t i = 0; i < optionals->size; ++i) {
+		optional_destroy(optionals->data + i);
+	}
 	optionals->size = 0;
 	free(optionals->data);
 }

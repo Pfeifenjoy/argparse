@@ -11,6 +11,7 @@
 
 #include "argparse/optionals.h"
 #include "argparse/arguments.h"
+#include "argparse/context.h"
 
 struct command {
 	const char *name;
@@ -18,6 +19,8 @@ struct command {
 	void *context;
 	struct optionals optionals;
 	struct arguments arguments;
+	struct arguments optional_arguments;
+	void(*set)(const struct context *);
 };
 
 void command_init(struct command *, const char *name, const char *version);
@@ -35,21 +38,36 @@ void command_optional(
 	char short_name,
 	const char *long_name,
 	const char *description,
-	size_t arguments,
 	optional_set_t
 );
 
 void command_argument(
 	struct command *,
-	const char *name,
-	enum argument_type_t type
+	char *
+);
+
+void command_add_argument(
+	struct command *,
+	struct argument
+);
+
+void command_optional_argument(
+	struct command *,
+	char *
+);
+
+void command_add_optional_argument(
+	struct command *,
+	struct argument
 );
 
 void command_parse(
 	const struct command *,
 	size_t argc,
-	char * const argv[]
+	const char **argv
 );
+
+void command_print_help(const struct command *);
 
 void command_destroy(struct command *);
 
