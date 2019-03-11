@@ -41,7 +41,7 @@ static void print_description(const char *description) {
 	while(description[i] != '\0') {
 		if(description[i] == '\n') {
 			printf("%.*s", i - start, description + start);
-			printf("\n%*s", MAX_OPTIONAL_NAME + 8, " ");
+			printf("\n%*s", MAX_OPTION_NAME + 8, " ");
 			start = i + 1;
 		}
 		i++;
@@ -52,8 +52,8 @@ static void print_description(const char *description) {
 	printf("\n");
 }
 
-static void optional_check_argument(
-		const optional_t *optional,
+static void option_check_argument(
+		const option_t *option,
 		const argument_t *argument,
 		const char *value
 	) {
@@ -61,45 +61,41 @@ static void optional_check_argument(
 	if(value[0] == '-') {
 		fprintf(stderr, "Unexpected option: %s", value);
 		exit(EXIT_FAILURE);
-	} else if(argument->test != NULL && !argument->test(value)) {
-		fprintf(stderr, "Unexpected argument <%s> for --%s.",
-				argument->name, optional->long_name);
-		exit(EXIT_FAILURE);
 	}
 }
 
-static void command_optional_parse_arguments(
+static void command_option_parse_arguments(
 		const command_t *command,
-		const optional_t *optional,
+		const option_t *option,
 		parse_context_t *context
 	) {
 	s_vector_t arguments;
 	s_vector_init(&arguments);
 
 	//required arguments
-	for(size_t i = 0; i < optional->arguments.size; ++i) {
+	for(size_t i = 0; i < option->arguments.size; ++i) {
 		const char *current = context->argv[context->position + i];
 
 		if(context->position + i >= context->argc) {
 			fprintf(stderr, "Missing argument <%s> for --%s.",
-					optional->arguments.data[i].name, optional->long_name);
+					option->arguments.data[i].name, option->long_name);
 			exit(EXIT_FAILURE);
 		}
 
-		optional_check_argument(optional, optional->arguments.data + i, current);
+		option_check_argument(option, option->arguments.data + i, current);
 		s_vector_add(&arguments, current);
 	}
-	context->position += optional->arguments.size;
+	context->position += option->arguments.size;
 
-	//optional arguments
-	for(size_t i = 0; i < optional->optional_arguments.size; ++i) {
+	//option arguments
+	for(size_t i = 0; i < option->option_arguments.size; ++i) {
 		const char *current = context->argv[context->position + i];
 
 		if(context->position + i >= context->argc || current[0] == '-') {
 			break;
 		}
 
-		optional_check_argument(optional, optional->arguments.data + i, current);
+		option_check_argument(option, option->arguments.data + i, current);
 		s_vector_add(&arguments, current);
 
 		context->position++;
@@ -112,12 +108,12 @@ static void command_optional_parse_arguments(
 		.data = context->data
 	};
 
-	optional->set(&o_set_context);
+	option->set(&o_set_context);
 
 	s_vector_destroy(&arguments);
 }
 
-static void command_parse_short_optional(
+static void command_parse_short_option(
 		const command_t *command,
 		parse_context_t *context
 	) {
@@ -129,12 +125,12 @@ static void command_parse_short_optional(
 		bool matched = false;
 
 		//search for flag
-		for(size_t j = 0; j < command->optionals.size; ++j) {
-			optional_t *optional = command->optionals.data + j;
-			matched = optional->short_name == flags[i];
+		for(size_t j = 0; j < command->options.size; ++j) {
+			option_t *option = command->options.data + j;
+			matched = option->short_name == flags[i];
 
 			if(matched) {
-				command_optional_parse_arguments(command, optional, context);
+				command_option_parse_arguments(command, option, context);
 				break;
 			}
 		}
@@ -147,17 +143,17 @@ static void command_parse_short_optional(
 	}
 }
 
-static void command_parse_long_optional(
+static void command_parse_long_option(
 		const command_t *command,
 		parse_context_t *context
 	) {
 	const char *name = context->argv[context->position] + 2;
 	context->position++;
 
-	for(size_t i = 0; i < command->optionals.size; ++i) {
-		optional_t *option = command->optionals.data + i;
+	for(size_t i = 0; i < command->options.size; ++i) {
+		option_t *option = command->options.data + i;
 		if(strcmp(name, option->long_name) == 0) {
-			command_optional_parse_arguments(command, option, context);
+			command_option_parse_arguments(command, option, context);
 			return;
 		}
 	}
@@ -166,14 +162,14 @@ static void command_parse_long_optional(
 	exit(EXIT_FAILURE);
 }
 
-static void command_parse_optional(
+static void command_parse_option(
 		const command_t *command,
 		parse_context_t *context
 	) {
 	if(context->argv[context->position][1] == '-') {
-		command_parse_long_optional(command, context);
+		command_parse_long_option(command, context);
 	} else {
-		command_parse_short_optional(command, context);
+		command_parse_short_option(command, context);
 	}
 }
 
@@ -188,9 +184,9 @@ void command_init(
 	) {
 	command->name = name;
 	command->version = version;
-	optionals_init(&command->optionals);
+	options_init(&command->options);
 	arguments_init(&command->arguments);
-	arguments_init(&command->optional_arguments);
+	arguments_init(&command->option_arguments);
 	command_flag(command, 'h', "help", "Display help message.", help_set);
 	command_flag(command, 'V', "version", "Display the version.", version_set);
 }
@@ -213,18 +209,18 @@ void command_print_help(const command_t *command) {
 		"\n"
 	);
 
-	for(size_t i = 0; i < command->optionals.size; ++i) {
-		const char short_name = command->optionals.data[i].short_name;
-		const char *long_name = command->optionals.data[i].long_name;
-		const char *description = command->optionals.data[i].description;
+	for(size_t i = 0; i < command->options.size; ++i) {
+		const char short_name = command->options.data[i].short_name;
+		const char *long_name = command->options.data[i].long_name;
+		const char *description = command->options.data[i].description;
 
-		assert(strlen(long_name) < MAX_OPTIONAL_NAME);
+		assert(strlen(long_name) < MAX_OPTION_NAME);
 
 		printf(
 			"  -%c, --%s%*s",
 			short_name,
 			long_name,
-			(int) (MAX_OPTIONAL_NAME - strlen(long_name)),
+			(int) (MAX_OPTION_NAME - strlen(long_name)),
 			" "
 		);
 
@@ -238,9 +234,9 @@ void command_flag(
 		char short_name,
 		const char *long_name,
 		const char *description,
-		optional_set_t set
+		option_set_t set
 	) {
-	command_optional(
+	command_option(
 		command,
 		short_name,
 		long_name,
@@ -249,20 +245,20 @@ void command_flag(
 	);
 }
 
-void command_optional(
+void command_option(
 		command_t * command,
 		char short_name,
 		const char *long_name,
 		const char *description,
-		optional_set_t set
+		option_set_t set
 	) {
-	optional_t optional;
-	optional_init(&optional);
-	optional.short_name = short_name;
-	optional.long_name = long_name;
-	optional.description = description;
-	optional.set = set;
-	optionals_add(&command->optionals, optional);
+	option_t option;
+	option_init(&option, short_name, long_name, description, set);
+	command_add_option(command, option);
+}
+
+void command_add_option(command_t *command, option_t option) {
+	options_add(&command->options, option);
 }
 
 void command_argument(
@@ -279,22 +275,6 @@ void command_add_argument(
 		argument_t argument
 	) {
 	arguments_add(&command->arguments, argument);
-}
-
-void command_optional_argument(
-		command_t *command,
-		char *name
-	) {
-	argument_t argument;
-	argument.name = name;
-	command_add_optional_argument(command, argument);
-}
-
-void command_add_optional_argument(
-		command_t *command,
-		argument_t argument
-	) {
-	arguments_add(&command->optional_arguments, argument);
 }
 
 void command_parse(
@@ -319,9 +299,8 @@ void command_parse(
 		const char *current = context.argv[context.position];
 
 		if(current[0] == '-') {
-			command_parse_optional(command, &context);
-		} else if(argument_position >= command->arguments.size
-				|| !argument_test(command->arguments.data + argument_position, current)) {
+			command_parse_option(command, &context);
+		} else if(argument_position >= command->arguments.size) {
 			fprintf(stderr, "Unexpected argument %s", current);
 			exit(EXIT_FAILURE);
 		} else {
@@ -344,7 +323,7 @@ void command_parse(
 }
 
 void command_destroy(command_t *command) {
-	optionals_destroy(&command->optionals);
+	options_destroy(&command->options);
 	arguments_destroy(&command->arguments);
-	arguments_destroy(&command->optional_arguments);
+	arguments_destroy(&command->option_arguments);
 }

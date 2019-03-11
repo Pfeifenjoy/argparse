@@ -1,15 +1,15 @@
 #ifndef ARGPARSE_H_QMPV58OX
 #define ARGPARSE_H_QMPV58OX
 
-#ifndef MAX_OPTIONAL_NAME
-#define MAX_OPTIONAL_NAME (40 - 8)
+#ifndef MAX_OPTION_NAME
+#define MAX_OPTION_NAME (40 - 8)
 #endif
 
 #ifndef MIN_DESCRIPTION_LINE
 #define MIN_DESCRIPTION_LINE 20
 #endif
 
-#include "argparse/optionals.h"
+#include "argparse/options.h"
 #include "argparse/arguments.h"
 #include "argparse/context.h"
 
@@ -18,9 +18,9 @@ typedef void(*command_set_t)(context_t *);
 typedef struct command {
 	const char *name;
 	const char *version;
-	optionals_t optionals;
+	options_t options;
 	arguments_t arguments;
-	arguments_t optional_arguments;
+	arguments_t option_arguments;
 	command_set_t set;
 } command_t;
 
@@ -31,15 +31,20 @@ void command_flag(
 	char short_name,
 	const char *long_name,
 	const char *description,
-	optional_set_t
+	option_set_t
 );
 
-void command_optional(
+void command_option(
 	command_t *,
 	char short_name,
 	const char *long_name,
 	const char *description,
-	optional_set_t
+	option_set_t
+);
+
+void command_add_option(
+	command_t *,
+	option_t
 );
 
 void command_argument(
@@ -48,16 +53,6 @@ void command_argument(
 );
 
 void command_add_argument(
-	command_t *,
-	argument_t
-);
-
-void command_optional_argument(
-	command_t *,
-	char *
-);
-
-void command_add_optional_argument(
 	command_t *,
 	argument_t
 );

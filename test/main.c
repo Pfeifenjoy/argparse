@@ -106,8 +106,25 @@ static void test_long_option_name(fixture_t *fixture, gconstpointer _) {
 	g_assert_true(context.flag_set);
 }
 
+static void handle_option_with_parameter(context_t *context) {
+	bool *called = context->data;
+	*called = true;
+
+	g_assert_cmpint(context->arguments->length, ==, 1);
+	g_assert_cmpstr(context->arguments->data[0], ==, "arg1");
+}
+
 static void test_option_parameter(fixture_t *fixture, gconstpointer _) {
-	//TODO
+	option_t option;
+	option_init(&option, 'o', "option", "random option", handle_option_with_parameter);
+	option_add_argument(&option, "arg1", "random argument");
+	command_add_option(&fixture->command, option);
+	const char *argv[] = { "program", "--option", "arg1" };
+
+	bool called = false;
+	command_parse(&fixture->command, &called, 3, argv);
+
+	g_assert_true(called);
 }
 
 static void dummy_set(context_t *context) {
