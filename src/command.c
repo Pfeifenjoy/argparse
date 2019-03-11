@@ -14,18 +14,19 @@ typedef struct {
 	size_t position;
 	size_t argc;
 	const char **argv;
+	void *data;
 } parse_context_t;
 
 /************************************************************/
 /* Default handlers                                         */
 /************************************************************/
 
-static void help_set(const context_t *context) {
+static void help_set(context_t *context) {
 	command_print_help(context->command);
 	exit(EXIT_SUCCESS);
 }
 
-static void version_set(const context_t *context) {
+static void version_set(context_t *context) {
 	printf("%s\n", context->command->version);
 	exit(EXIT_SUCCESS);
 }
@@ -107,7 +108,8 @@ static void command_optional_parse_arguments(
 
 	context_t o_set_context = {
 		.command = command,
-		.arguments = &arguments
+		.arguments = &arguments,
+		.data = context->data
 	};
 
 	optional->set(&o_set_context);
@@ -150,11 +152,11 @@ static void command_parse_long_optional(
 		parse_context_t *context
 	) {
 	const char *name = context->argv[context->position] + 2;
+	context->position++;
 
-	for(size_t i = 0; command->optionals.size; ++i) {
+	for(size_t i = 0; i < command->optionals.size; ++i) {
 		optional_t *option = command->optionals.data + i;
 		if(strcmp(name, option->long_name) == 0) {
-			context->position++;
 			command_optional_parse_arguments(command, option, context);
 			return;
 		}
@@ -297,6 +299,7 @@ void command_add_optional_argument(
 
 void command_parse(
 		const command_t *command,
+		void *data,
 		size_t argc,
 		const char **argv
 	) {
@@ -304,7 +307,8 @@ void command_parse(
 	parse_context_t context = {
 		.position = 0,
 		.argc = argc,
-		.argv = argv
+		.argv = argv,
+		.data = data
 	};
 
 	size_t argument_position = 0;
@@ -328,7 +332,8 @@ void command_parse(
 
 	context_t command_context = {
 		.command = command,
-		.arguments = &arguments
+		.arguments = &arguments,
+		.data = data
 	};
 
 	if(command->set != NULL) {

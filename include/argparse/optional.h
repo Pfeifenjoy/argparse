@@ -7,7 +7,7 @@
 
 #include "stdlib.h"
 
-typedef void(*optional_set_t)(const context_t *);
+typedef void(*optional_set_t)(context_t *);
 
 typedef struct {
 	char short_name;

@@ -13,12 +13,11 @@
 #include "argparse/arguments.h"
 #include "argparse/context.h"
 
-typedef void(*command_set_t)(const context_t *);
+typedef void(*command_set_t)(context_t *);
 
 typedef struct command {
 	const char *name;
 	const char *version;
-	void *context;
 	optionals_t optionals;
 	arguments_t arguments;
 	arguments_t optional_arguments;
@@ -65,6 +64,7 @@ void command_add_optional_argument(
 
 void command_parse(
 	const command_t *,
+	void *,
 	size_t argc,
 	const char **argv
 );
