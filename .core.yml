@@ -1,0 +1,14 @@
+kind: pipeline
+name: default
+
+steps:
+
+- name: build
+  image: pfeifenjoy/argparse
+  commands:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - cmake --build .
+  - ctest --verbose .
+  - cd ..
