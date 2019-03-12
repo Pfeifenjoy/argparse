@@ -61,10 +61,14 @@ install(FILES build/argparseConfigVersion.cmake
 
 #CPack
 set(CPACK_PACKAGE_CONTACT "arwed.mett@googlemail.com")
+set(CPACK_PACKAGE_NAME "argparse")
+set(CPACK_PACKAGE_VERSION_MAJOR "0")
+set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_VERSION_PATCH "0")
 if(APPLE)
 	set(CPACK_GENERATOR "TGZ;ZIP;productbuild")
 elseif(UNIX)
-	set(CPACK_GENERATOR "TGZ;ZIP;RPM;DEB")
+	set(CPACK_GENERATOR "TGZ;ZIP")
 elseif(WIN32)
 	set(CPACK_GENERATOR "ZIP;NSIS;NSIS64")
 else()
