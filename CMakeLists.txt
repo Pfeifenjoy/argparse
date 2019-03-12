@@ -16,6 +16,9 @@ add_library(argparse
 )
 target_include_directories(argparse PUBLIC include)
 
+#Examples
+add_subdirectory(examples)
+
 #Tests
 enable_testing()
 add_executable(argparse_tests test/main.c)
@@ -27,3 +30,4 @@ add_test(
 	COMMAND argparse_tests
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/test
 )
+
