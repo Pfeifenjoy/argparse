@@ -19,7 +19,9 @@ typedef struct command {
 	const char *name;
 	const char *version;
 	options_t options;
-	arguments_t arguments;
+	arguments_t required_arguments;
+	arguments_t optional_arguments;
+	argument_t last_arguments;
 	command_set_t set;
 } command_t;
 
@@ -46,15 +48,32 @@ void command_add_option(
 	option_t
 );
 
-void command_argument(
+void command_require_argument(
 	command_t *,
 	const char *,
 	const char *
 );
 
-void command_add_argument(
+void command_add_required_argument(
 	command_t *,
 	argument_t
+);
+
+void command_optional_argument(
+	command_t *,
+	const char *,
+	const char *
+);
+
+void command_add_optional_argument(
+	command_t *,
+	argument_t
+);
+
+void command_last_arguments(
+	command_t *,
+	const char *,
+	const char *
 );
 
 void command_parse(

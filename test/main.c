@@ -123,7 +123,7 @@ static void handle_option_with_parameter(context_t *context) {
 static void test_option_parameter(fixture_t *fixture, gconstpointer _) {
 	option_t option;
 	option_init(&option, 'o', "option", "random option", handle_option_with_parameter);
-	option_add_argument(&option, "arg1", "random argument");
+	option_add_required_argument(&option, "arg1", "random argument");
 	command_add_option(&fixture->command, option);
 	const char *argv[] = { "program", "--option", "arg1" };
 
@@ -159,6 +159,111 @@ static void test_unknown_long_option(fixture_t *fixture, gconstpointer _) {
 	g_test_trap_assert_stderr("Unknown option: --bad-option\n");
 }
 
+static void command_set_with_argument(context_t *context) {
+	g_assert_cmpint(context->arguments->length, ==, 1);
+	g_assert_cmpstr(context->arguments->data[0], ==, "argument_1");
+}
+
+static void test_command_argument(fixture_t *fixture, gconstpointer _) {
+	command_require_argument(&fixture->command, "arg1", "Argument number 1");
+	fixture->command.set = command_set_with_argument;
+
+	const char *argv[] = { "program", "argument_1" };
+	command_parse(&fixture->command, NULL, 2, argv);
+}
+
+static void test_unexpected_command_argument(fixture_t *fixture, gconstpointer _) {
+	if(g_test_subprocess()) {
+		const char *argv[] = { "program", "argument_1" };
+		command_parse(&fixture->command, NULL, 2, argv);
+		exit(EXIT_SUCCESS);
+	}
+	g_test_trap_subprocess(NULL, 0, 0);
+	g_test_trap_assert_passed();
+	g_test_trap_assert_stdout("Warning - Unexpected argument: argument_1\n");
+}
+
+static void test_command_missing_required_argument(fixture_t *fixture, gconstpointer _) {
+	if(g_test_subprocess()) {
+		const char *argv[] = { "program" };
+		command_require_argument(&fixture->command, "arg1", "Argument 1");
+		command_parse(&fixture->command, NULL, 1, argv);
+		exit(EXIT_SUCCESS);
+	}
+	g_test_trap_subprocess(NULL, 0, 0);
+	g_test_trap_assert_failed();
+	g_test_trap_assert_stderr("Missing required argument <arg1>.\n");
+}
+
+static void test_help_command_argument(fixture_t *fixture, gconstpointer _) {
+	if(g_test_subprocess()) {
+		command_optional_argument(&fixture->command, "opt1", "Optional Argument 1");
+		command_require_argument(&fixture->command, "arg1", "Required Argument 1");
+		command_last_arguments(&fixture->command, "rest", "The rest of the arguments");
+		const char *argv[] = { "program", "-h" };
+		command_parse(&fixture->command, NULL, 2, argv);
+	}
+
+	g_test_trap_subprocess(NULL, 0, 0);
+	g_test_trap_assert_passed();
+	g_test_trap_assert_stdout(
+		"\n"
+		"  Usage: program [options] <arg1> [opt1] [...rest]\n"
+		"\n"
+		"  Options:\n"
+		"\n"
+		"  -h, --help                            Display help message.\n"
+		"  -V, --version                         Display the version.\n"
+		"\n"
+	);
+}
+
+static void test_command_last_argument_missing(fixture_t *fixture, gconstpointer _) {
+	command_last_arguments(&fixture->command, "last", "Last Argument");
+	const char *argv[] = { "program" };
+	command_parse(&fixture->command, NULL, 1, argv);
+}
+
+static void set_last_argument(context_t *context) {
+	g_assert_cmpint(context->arguments->length, ==, 2);
+	g_assert_cmpstr(context->arguments->data[0], ==, "l1");
+	g_assert_cmpstr(context->arguments->data[1], ==, "l2");
+}
+
+static void test_command_last_argument_available(fixture_t *fixture, gconstpointer _) {
+	fixture->command.set = set_last_argument;
+	command_last_arguments(&fixture->command, "last", "Last Argument");
+	const char *argv[] = { "program", "l1", "l2" };
+	command_parse(&fixture->command, NULL, 3, argv);
+}
+
+static void set_ignore(context_t *context) { }
+static void test_option_argument(fixture_t *fixture, gconstpointer _) {
+	if(g_test_subprocess()) {
+		option_t option;
+		option_init(&option, 'o', "option", "Option with argument.", set_ignore);
+		option_add_required_argument(&option, "arg1", "Required Option argument");
+		option_add_optional_argument(&option, "arg2", "Optional Option argument");
+		command_add_option(&fixture->command, option);
+		const char *argv[] = { "program", "-h" };
+		command_parse(&fixture->command, NULL, 2, argv);
+	}
+
+	g_test_trap_subprocess(NULL, 0, 0);
+	g_test_trap_assert_passed();
+	g_test_trap_assert_stdout(
+		"\n"
+		"  Usage: program [options]\n"
+		"\n"
+		"  Options:\n"
+		"\n"
+		"  -h, --help                            Display help message.\n"
+		"  -V, --version                         Display the version.\n"
+		"  -o, --option <arg1> [arg2]            Option with argument.\n"
+		"\n"
+	);
+}
+
 int main(int argc, char **argv) {
 	g_test_init(&argc, &argv, NULL);
 	g_test_add("/command/version",
@@ -177,6 +282,20 @@ int main(int argc, char **argv) {
 			fixture_t, NULL, program_setup, test_set_function, program_teardown);
 	g_test_add("/command/unknown-long-option",
 			fixture_t, NULL, program_setup, test_unknown_long_option, program_teardown);
+	g_test_add("/command/command-argument",
+			fixture_t, NULL, program_setup, test_command_argument, program_teardown);
+	g_test_add("/command/command-unexpected-argument", fixture_t, NULL,
+			program_setup, test_unexpected_command_argument, program_teardown);
+	g_test_add("/command/command-missing-required_argument", fixture_t, NULL,
+			program_setup, test_command_missing_required_argument, program_teardown);
+	g_test_add("/command/command-last-argument-missing", fixture_t, NULL,
+			program_setup, test_command_last_argument_missing, program_teardown);
+	g_test_add("/command/command-last-argument-available", fixture_t, NULL,
+			program_setup, test_command_last_argument_available, program_teardown);
+	g_test_add("/command/command-print-help-argument", fixture_t, NULL,
+			program_setup, test_help_command_argument, program_teardown);
+	g_test_add("/option/help-argument", fixture_t, NULL,
+			program_setup, test_option_argument, program_teardown);
 	return g_test_run();
 }
 
