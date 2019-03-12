@@ -15,7 +15,10 @@ add_library(argparse
 	src/memory.c
 	src/vector.c
 )
-target_include_directories(argparse PUBLIC include)
+target_include_directories(argparse PUBLIC 
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include>
+)
 
 #Examples
 add_subdirectory(examples)
@@ -32,3 +35,41 @@ add_test(
 	WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/test
 )
 
+#Install
+install(TARGETS argparse EXPORT Targets
+	ARCHIVE DESTINATION lib
+	LIBRARY DESTINATION lib
+	RUNTIME DESTINATION bin
+	INCLUDES DESTINATION include
+)
+install(DIRECTORY include/argparse DESTINATION include)
+
+install(EXPORT Targets
+	FILE argparseTargets.cmake
+	NAMESPACE argparse::
+	DESTINATION lib/cmake/argparse
+)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(argparseConfigVersion.cmake
+	COMPATIBILITY SameMajorVersion
+)
+
+install(FILES build/argparseConfigVersion.cmake
+	DESTINATION lib/cmake/argparse
+)
+
+#CPack
+set(CPACK_PACKAGE_CONTACT "arwed.mett@googlemail.com")
+if(APPLE)
+	set(CPACK_GENERATOR "TGZ;ZIP;productbuild")
+elseif(UNIX)
+	set(CPACK_GENERATOR "TGZ;ZIP;RPM;DEB")
+elseif(WIN32)
+	set(CPACK_GENERATOR "ZIP;NSIS;NSIS64")
+else()
+	set(CPACK_GENERATOR "TGZ;ZIP")
+endif()
+
+set(CPACK_BUNDLE_NAME argparse)
+include(CPack)
