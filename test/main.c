@@ -270,29 +270,29 @@ int main(int argc, char **argv) {
 			fixture_t, NULL, program_setup, test_version, program_teardown);
 	g_test_add("/command/help",
 			fixture_t, NULL, program_setup, test_help, program_teardown);
-	g_test_add("/command/unknown-option",
+	g_test_add("/option/unknown",
 			fixture_t, NULL, program_setup, test_unknown_option, program_teardown);
-	g_test_add("/command/multiple-flags",
+	g_test_add("/option/multiple",
 			fixture_t, NULL, program_setup, test_multiple_option, program_teardown);
-	g_test_add("/command/long-option-name",
+	g_test_add("/option/long-name",
 			fixture_t, NULL, program_setup, test_long_option_name, program_teardown);
-	g_test_add("/command/option-parameter",
+	g_test_add("/option/argument",
 			fixture_t, NULL, program_setup, test_option_parameter, program_teardown);
-	g_test_add("/command/set-function",
+	g_test_add("/command/set",
 			fixture_t, NULL, program_setup, test_set_function, program_teardown);
-	g_test_add("/command/unknown-long-option",
+	g_test_add("/option/unknown-long",
 			fixture_t, NULL, program_setup, test_unknown_long_option, program_teardown);
-	g_test_add("/command/command-argument",
+	g_test_add("/command/argument",
 			fixture_t, NULL, program_setup, test_command_argument, program_teardown);
-	g_test_add("/command/command-unexpected-argument", fixture_t, NULL,
+	g_test_add("/command/unexpected-argument", fixture_t, NULL,
 			program_setup, test_unexpected_command_argument, program_teardown);
-	g_test_add("/command/command-missing-required_argument", fixture_t, NULL,
+	g_test_add("/command/missing-required_argument", fixture_t, NULL,
 			program_setup, test_command_missing_required_argument, program_teardown);
-	g_test_add("/command/command-last-argument-missing", fixture_t, NULL,
+	g_test_add("/command/last-argument-missing", fixture_t, NULL,
 			program_setup, test_command_last_argument_missing, program_teardown);
-	g_test_add("/command/command-last-argument-available", fixture_t, NULL,
+	g_test_add("/command/last-argument-available", fixture_t, NULL,
 			program_setup, test_command_last_argument_available, program_teardown);
-	g_test_add("/command/command-print-help-argument", fixture_t, NULL,
+	g_test_add("/command/print-help-argument", fixture_t, NULL,
 			program_setup, test_help_command_argument, program_teardown);
 	g_test_add("/option/help-argument", fixture_t, NULL,
 			program_setup, test_option_argument, program_teardown);
