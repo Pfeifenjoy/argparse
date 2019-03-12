@@ -17,12 +17,13 @@ void option_init(
 
 void option_add_argument(option_t *option, const char *name, const char *description) {
 	argument_t argument;
-	argument.name = name;
-	argument.description = description;
+	argument_init(&argument, name, description);
 	arguments_add(&option->arguments, argument);
 }
 
-void option_add_option_argument(option_t *option, argument_t argument) {
+void option_add_option_argument(option_t *option, const char *name, const char *description) {
+	argument_t argument;
+	argument_init(&argument, name, description);
 	arguments_add(&option->option_arguments, argument);
 }
 

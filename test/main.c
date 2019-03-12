@@ -42,10 +42,16 @@ static void test_help(fixture_t *fixture, gconstpointer _) {
 
 	g_test_trap_subprocess(NULL, 0, 0);
 	g_test_trap_assert_passed();
-	FILE *expected = fopen("basic-help", "r");
-	char buffer[165];
-	g_assert_true(fread(buffer, sizeof(char), 165, expected));
-	g_test_trap_assert_stdout(buffer);
+	g_test_trap_assert_stdout(
+		"\n"
+		"  Usage: program [options]\n"
+		"\n"
+		"  Options:\n"
+		"\n"
+		"  -h, --help                            Display help message.\n"
+		"  -V, --version                         Display the version.\n"
+		"\n"
+	);
 }
 
 static void test_unknown_option(fixture_t *fixture, gconstpointer _) {

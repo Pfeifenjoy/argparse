@@ -9,4 +9,6 @@ typedef struct {
 	const char *description;
 } argument_t;
 
+void argument_init(argument_t *argument, const char *, const char *);
+
 #endif /* end of include guard: ARGUMENT_H_TUQ0BVOC */

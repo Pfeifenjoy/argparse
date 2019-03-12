@@ -20,7 +20,6 @@ typedef struct command {
 	const char *version;
 	options_t options;
 	arguments_t arguments;
-	arguments_t option_arguments;
 	command_set_t set;
 } command_t;
 
@@ -49,7 +48,8 @@ void command_add_option(
 
 void command_argument(
 	command_t *,
-	char *
+	const char *,
+	const char *
 );
 
 void command_add_argument(

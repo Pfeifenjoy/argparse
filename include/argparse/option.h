@@ -21,7 +21,7 @@ typedef struct {
 void option_init(option_t *, char, const char *, const char *, option_set_t);
 
 void option_add_argument(option_t *, const char *, const char *);
-void option_add_option_argument(option_t *, argument_t);
+void option_add_option_argument(option_t *, const char *, const char *);
 
 void option_destroy(option_t *);
 

@@ -54,10 +54,8 @@ static void print_description(const char *description) {
 
 static void option_check_argument(
 		const option_t *option,
-		const argument_t *argument,
 		const char *value
 	) {
-
 	if(value[0] == '-') {
 		fprintf(stderr, "Unexpected option: %s", value);
 		exit(EXIT_FAILURE);
@@ -82,7 +80,7 @@ static void command_option_parse_arguments(
 			exit(EXIT_FAILURE);
 		}
 
-		option_check_argument(option, option->arguments.data + i, current);
+		option_check_argument(option, current);
 		s_vector_add(&arguments, current);
 	}
 	context->position += option->arguments.size;
@@ -95,7 +93,7 @@ static void command_option_parse_arguments(
 			break;
 		}
 
-		option_check_argument(option, option->arguments.data + i, current);
+		option_check_argument(option, current);
 		s_vector_add(&arguments, current);
 
 		context->position++;
@@ -184,9 +182,10 @@ void command_init(
 	) {
 	command->name = name;
 	command->version = version;
+	command->set = NULL;
+
 	options_init(&command->options);
 	arguments_init(&command->arguments);
-	arguments_init(&command->option_arguments);
 	command_flag(command, 'h', "help", "Display help message.", help_set);
 	command_flag(command, 'V', "version", "Display the version.", version_set);
 }
@@ -263,10 +262,11 @@ void command_add_option(command_t *command, option_t option) {
 
 void command_argument(
 		command_t *command,
-		char *name
+		const char *name,
+		const char *description
 	) {
 	argument_t argument;
-	argument.name = name;
+	argument_init(&argument, name, description);
 	command_add_argument(command, argument);
 }
 
@@ -284,7 +284,7 @@ void command_parse(
 		const char **argv
 	) {
 
-	parse_context_t context = {
+	parse_context_t parse_context = {
 		.position = 0,
 		.argc = argc,
 		.argv = argv,
@@ -295,11 +295,11 @@ void command_parse(
 	s_vector_t arguments;
 	s_vector_init(&arguments);
 
-	for(context.position = 1; context.position < context.argc;) {
-		const char *current = context.argv[context.position];
+	for(parse_context.position = 1; parse_context.position < parse_context.argc;) {
+		const char *current = parse_context.argv[parse_context.position];
 
 		if(current[0] == '-') {
-			command_parse_option(command, &context);
+			command_parse_option(command, &parse_context);
 		} else if(argument_position >= command->arguments.size) {
 			fprintf(stderr, "Unexpected argument %s", current);
 			exit(EXIT_FAILURE);
@@ -325,5 +325,4 @@ void command_parse(
 void command_destroy(command_t *command) {
 	options_destroy(&command->options);
 	arguments_destroy(&command->arguments);
-	arguments_destroy(&command->option_arguments);
 }

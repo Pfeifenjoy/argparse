@@ -8,6 +8,7 @@ pkg_search_module(GLIB REQUIRED glib-2.0)
 #Library
 add_library(argparse
 	src/command.c
+	src/argument.c
 	src/arguments.c
 	src/option.c
 	src/options.c
