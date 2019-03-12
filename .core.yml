@@ -10,5 +10,11 @@ steps:
   - cd build
   - cmake ..
   - cmake --build .
+  - cd ..
+
+- name: test
+  image: pfeifenjoy/argparse
+  commands:
+  - cd build
   - ctest --verbose .
   - cd ..
