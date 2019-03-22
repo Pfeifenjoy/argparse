@@ -6,31 +6,27 @@ steps:
 - name: build
   image: pfeifenjoy/argparse
   commands:
-  - mkdir build
-  - cd build
-  - cmake ..
-  - cmake --build .
-  - cd ..
+  - cmake -DCMAKE_BUILD_TYPE=Debug -H. -Bbuild
+  - cmake --build build
 
 - name: test
   image: pfeifenjoy/argparse
   commands:
-  - cd build
-  - ctest --verbose .
-  - cd ..
+  - ctest --verbose build
 
 - name: memcheck
   image: pfeifenjoy/argparse
   commands:
-  - valgrind --leak-check=yes --error-exitcode=1 --suppressions=./.valgrind-suppressions ./build/argparse_tests
-  - valgrind --leak-check=yes --error-exitcode=1 ./build/argparse_set_tests
+  - valgrind --leak-check=yes --error-exitcode=1 --suppressions=./.valgrind-suppressions ./build/test/argparse_tests
+  - valgrind --leak-check=yes --error-exitcode=1 ./build/test/argparse_set_tests
 
-- name: package
+- name: linux
   image: pfeifenjoy/argparse
   commands:
-  - cd build
-  - cpack .
-  - cd ..
+  - rm -rf build
+  - cmake -DCMAKE_BUILD_TYPE=Release -H. -Bbuild
+  - cmake --build build --target package
+
 
 - name: gitea_release
   image: plugins/gitea-release
