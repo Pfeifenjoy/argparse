@@ -6,6 +6,7 @@
 #include "argparse/context.h"
 
 #include "stdlib.h"
+#include "stdbool.h"
 
 typedef void(*option_set_t)(context_t *);
 
@@ -14,6 +15,7 @@ typedef struct {
 	const char *long_name;
 	const char *description;
 	option_set_t set;
+	bool already_set;
 	arguments_t required_arguments;
 	arguments_t optional_arguments;
 } option_t;

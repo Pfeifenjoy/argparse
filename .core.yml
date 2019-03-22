@@ -23,6 +23,7 @@ steps:
   image: pfeifenjoy/argparse
   commands:
   - valgrind --leak-check=yes --error-exitcode=1 --suppressions=./.valgrind-suppressions ./build/argparse_tests
+  - valgrind --leak-check=yes --error-exitcode=1 ./build/argparse_set_tests
 
 - name: package
   image: pfeifenjoy/argparse

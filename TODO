@@ -1,0 +1,1 @@
+- Check if flag has already been set -> prevent a second call to set.

@@ -11,6 +11,7 @@ void option_init(
 	option->long_name = long_name;
 	option->description = description;
 	option->set = set;
+	option->already_set = false;
 	arguments_init(&option->required_arguments);
 	arguments_init(&option->optional_arguments);
 }

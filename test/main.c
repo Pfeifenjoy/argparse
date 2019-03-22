@@ -28,6 +28,7 @@ static void test_version(fixture_t *fixture, gconstpointer _) {
 	if(g_test_subprocess()) {
 		const char *argv[] = { "program", "-V" };
 		command_parse(&fixture->command, NULL, 2, argv);
+		exit(EXIT_FAILURE);
 	}
 	g_test_trap_subprocess(NULL, 0, 0);
 	g_test_trap_assert_passed();
@@ -117,7 +118,7 @@ static void handle_option_with_parameter(context_t *context) {
 	*called = true;
 
 	g_assert_cmpint(context->arguments->length, ==, 1);
-	g_assert_cmpstr(context->arguments->data[0], ==, "arg1");
+	g_assert_cmpstr(s_vector_get_const(context->arguments, 0), ==, "arg1");
 }
 
 static void test_option_parameter(fixture_t *fixture, gconstpointer _) {
@@ -161,7 +162,7 @@ static void test_unknown_long_option(fixture_t *fixture, gconstpointer _) {
 
 static void command_set_with_argument(context_t *context) {
 	g_assert_cmpint(context->arguments->length, ==, 1);
-	g_assert_cmpstr(context->arguments->data[0], ==, "argument_1");
+	g_assert_cmpstr(s_vector_get_const(context->arguments, 0), ==, "argument_1");
 }
 
 static void test_command_argument(fixture_t *fixture, gconstpointer _) {
@@ -226,8 +227,8 @@ static void test_command_last_argument_missing(fixture_t *fixture, gconstpointer
 
 static void set_last_argument(context_t *context) {
 	g_assert_cmpint(context->arguments->length, ==, 2);
-	g_assert_cmpstr(context->arguments->data[0], ==, "l1");
-	g_assert_cmpstr(context->arguments->data[1], ==, "l2");
+	g_assert_cmpstr(s_vector_get_const(context->arguments, 0), ==, "l1");
+	g_assert_cmpstr(s_vector_get_const(context->arguments, 1), ==, "l2");
 }
 
 static void test_command_last_argument_available(fixture_t *fixture, gconstpointer _) {
@@ -264,6 +265,18 @@ static void test_option_argument(fixture_t *fixture, gconstpointer _) {
 	);
 }
 
+static void duplicate_option_set(context_t *context) {
+	static bool has_been_set = false;
+	g_assert_false(has_been_set);
+	has_been_set = true;
+}
+
+static void test_option_duplicate(fixture_t *fixture, gconstpointer _) {
+	command_flag(&fixture->command, 'a', "arbitrary", "Arbitrary flag.", duplicate_option_set);
+	const char *argv[] = { "program", "-aa" };
+	command_parse(&fixture->command, NULL, 2, argv);
+}
+
 int main(int argc, char **argv) {
 	g_test_init(&argc, &argv, NULL);
 	g_test_add("/command/version",
@@ -296,6 +309,8 @@ int main(int argc, char **argv) {
 			program_setup, test_help_command_argument, program_teardown);
 	g_test_add("/option/help-argument", fixture_t, NULL,
 			program_setup, test_option_argument, program_teardown);
+	g_test_add("/option/duplicate", fixture_t, NULL,
+			program_setup, test_option_duplicate, program_teardown);
 	return g_test_run();
 }
 

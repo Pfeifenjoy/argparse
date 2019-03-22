@@ -23,11 +23,13 @@ typedef struct {
 
 static void help_set(context_t *context) {
 	command_print_help(context->command);
+	context_destroy(context);
 	exit(EXIT_SUCCESS);
 }
 
 static void version_set(context_t *context) {
 	printf("%s\n", context->command->version);
+	context_destroy(context);
 	exit(EXIT_SUCCESS);
 }
 
@@ -46,7 +48,7 @@ static void option_check_argument(
 
 static void command_option_parse_arguments(
 		const command_t *command,
-		const option_t *option,
+		option_t *option,
 		parse_context_t *context
 	) {
 	s_vector_t arguments;
@@ -81,14 +83,16 @@ static void command_option_parse_arguments(
 		context->position++;
 	}
 
+	context_t o_set_context;
 
-	context_t o_set_context = {
-		.command = command,
-		.arguments = &arguments,
-		.data = context->data
-	};
+	context_init(&o_set_context, command, &arguments, context->data);
 
-	option->set(&o_set_context);
+	if(!option->already_set) {
+		option->set(&o_set_context);
+		option->already_set = true;
+	}
+
+	context_destroy(&o_set_context);
 
 	s_vector_destroy(&arguments);
 }
@@ -360,15 +364,15 @@ void command_parse(
 		exit(EXIT_FAILURE);
 	}
 
-	context_t command_context = {
-		.command = command,
-		.arguments = &arguments,
-		.data = data
-	};
+	context_t command_context;
+
+	context_init(&command_context, command, &arguments, data);
 
 	if(command->set != NULL) {
 		command->set(&command_context);
 	}
+
+	context_destroy(&command_context);
 
 	s_vector_destroy(&arguments);
 }
