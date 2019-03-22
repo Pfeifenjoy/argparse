@@ -29,6 +29,13 @@ const void *generic_vector_get_const(const generic_vector_t *vector, size_t i) {
 	return vector->data[i];
 }
 
+void generic_vector_for_each(const generic_vector_t *vector,
+		void(*f)(const void *, void *), void *c) {
+	for(size_t i = 0; i < vector->length; ++i) {
+		f(generic_vector_get_const(vector, i), c);
+	}
+}
+
 void generic_vector_destroy(generic_vector_t *vector) {
 	for(size_t i = 0; i < vector->length; ++i) {
 		free(generic_vector_get(vector, i));
@@ -60,21 +67,5 @@ void s_vector_destroy(s_vector_t *vector) {
 	for(size_t i = 0; i < vector->length; ++i) {
 		free(s_vector_get(vector, i));
 	}
-	generic_vector_destroy(vector);
-}
-
-void c_vector_init(c_vector_t *vector) {
-	generic_vector_init(vector, sizeof(char));
-}
-
-void c_vector_add(c_vector_t *vector, char element) {
-	generic_vector_add(vector, &element);
-}
-
-char c_vector_get(const c_vector_t *vector, size_t i) {
-	return *((char *) generic_vector_get_const(vector, i));
-}
-
-void c_vector_destroy(c_vector_t *vector) {
 	generic_vector_destroy(vector);
 }

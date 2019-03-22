@@ -15,7 +15,32 @@ typedef struct {
 	size_t argc;
 	const char **argv;
 	void *data;
+	generic_set_t seen;
 } parse_context_t;
+
+static int seen_compare(const void *lhs, const void *rhs) {
+	return *((const void **) lhs) - *((const void **) rhs);
+}
+
+void parse_context_init(parse_context_t *context) {
+	generic_set_init(&context->seen, sizeof(void *), seen_compare);
+}
+
+void parse_context_destroy(parse_context_t *context) {
+	generic_set_destroy(&context->seen);
+}
+
+bool parse_context_has_seen(parse_context_t *context, const option_t *option) {
+	return generic_set_has(&context->seen, &option);
+}
+
+void parse_context_add_seen(parse_context_t *context, const option_t *option) {
+	if(parse_context_has_seen(context, option)) {
+		fprintf(stderr, "Duplicate option: --%s\n", option->long_name);
+		exit(EXIT_FAILURE);
+	}
+	return generic_set_add(&context->seen, &option);
+}
 
 /************************************************************/
 /* Default handlers                                         */
@@ -36,10 +61,7 @@ static void version_set(context_t *context) {
 /************************************************************/
 /* Helper functions                                         */
 /************************************************************/
-static void option_check_argument(
-		const option_t *option,
-		const char *value
-	) {
+static void option_check_argument(const char *value) {
 	if(value[0] == '-') {
 		fprintf(stderr, "Unexpected option: %s", value);
 		exit(EXIT_FAILURE);
@@ -48,7 +70,7 @@ static void option_check_argument(
 
 static void command_option_parse_arguments(
 		const command_t *command,
-		option_t *option,
+		const option_t *option,
 		parse_context_t *context
 	) {
 	s_vector_t arguments;
@@ -64,7 +86,7 @@ static void command_option_parse_arguments(
 			exit(EXIT_FAILURE);
 		}
 
-		option_check_argument(option, current);
+		option_check_argument(current);
 		s_vector_add(&arguments, current);
 	}
 	context->position += option->required_arguments.size;
@@ -77,7 +99,7 @@ static void command_option_parse_arguments(
 			break;
 		}
 
-		option_check_argument(option, current);
+		option_check_argument(current);
 		s_vector_add(&arguments, current);
 
 		context->position++;
@@ -87,10 +109,7 @@ static void command_option_parse_arguments(
 
 	context_init(&o_set_context, command, &arguments, context->data);
 
-	if(!option->already_set) {
-		option->set(&o_set_context);
-		option->already_set = true;
-	}
+	option->set(&o_set_context);
 
 	context_destroy(&o_set_context);
 
@@ -106,24 +125,17 @@ static void command_parse_short_option(
 	context->position++;
 
 	for(size_t i = 0; flags[i] != '\0'; ++i) {
-		bool matched = false;
-
 		//search for flag
-		for(size_t j = 0; j < command->options.size; ++j) {
-			option_t *option = command->options.data + j;
-			matched = option->short_name == flags[i];
-
-			if(matched) {
-				command_option_parse_arguments(command, option, context);
-				break;
-			}
-		}
+		const option_t *result =
+			options_find_by_abbreviation(&command->options, flags[i]);
 
 		//if no match is found -> error
-		if(!matched) {
+		if(!result) {
 			fprintf(stderr, "Unknown option: -%c\n", flags[i]);
 			exit(EXIT_FAILURE);
 		}
+		parse_context_add_seen(context, result);
+		command_option_parse_arguments(command, result, context);
 	}
 }
 
@@ -134,16 +146,14 @@ static void command_parse_long_option(
 	const char *name = context->argv[context->position] + 2;
 	context->position++;
 
-	for(size_t i = 0; i < command->options.size; ++i) {
-		option_t *option = command->options.data + i;
-		if(strcmp(name, option->long_name) == 0) {
-			command_option_parse_arguments(command, option, context);
-			return;
-		}
+	const option_t *result = options_find_by_long_name(&command->options, name);
+	if(!result) {
+		fprintf(stderr, "Unknown option: --%s\n", name);
+		exit(EXIT_FAILURE);
 	}
 
-	fprintf(stderr, "Unknown option: --%s\n", name);
-	exit(EXIT_FAILURE);
+	parse_context_add_seen(context, result);
+	command_option_parse_arguments(command, result, context);
 }
 
 static void command_parse_option(
@@ -167,7 +177,7 @@ static void fprint_option_head(FILE *out, const option_t *option) {
 	}
 	assert(strlen(option->long_name) < MAX_OPTION_NAME);
 
-	fprintf(out, "  -%c, --%s", option->short_name, option->long_name);
+	fprintf(out, "  -%c, --%s", option->abbreviation, option->long_name);
 	for(size_t i = 0; i < option->required_arguments.size; ++i) {
 		fprintf(out, " <%s>", option->required_arguments.data[i].name);
 	}
@@ -223,6 +233,10 @@ void command_init(
 	command_flag(command, 'V', "version", "Display the version.", version_set);
 }
 
+static void print_option(const option_t *option, void *_out) {
+	fprint_option((FILE *) _out, option);
+}
+
 void command_print_help(const command_t *command) {
 	printf(
 		"\n"
@@ -247,22 +261,20 @@ void command_print_help(const command_t *command) {
 		"\n"
 	);
 
-	for(size_t i = 0; i < command->options.size; ++i) {
-		fprint_option(stdout, command->options.data + i);
-	}
+	options_for_each(&command->options, print_option, stdout);
 	printf("\n");
 }
 
 void command_flag(
 		command_t * command,
-		char short_name,
+		char abbreviation,
 		const char *long_name,
 		const char *description,
 		option_set_t set
 	) {
 	command_option(
 		command,
-		short_name,
+		abbreviation,
 		long_name,
 		description,
 		set
@@ -271,13 +283,13 @@ void command_flag(
 
 void command_option(
 		command_t * command,
-		char short_name,
+		char abbreviation,
 		const char *long_name,
 		const char *description,
 		option_set_t set
 	) {
 	option_t option;
-	option_init(&option, short_name, long_name, description, set);
+	option_init(&option, abbreviation, long_name, description, set);
 	command_add_option(command, option);
 }
 
@@ -339,6 +351,8 @@ void command_parse(
 		.data = data
 	};
 
+	parse_context_init(&parse_context);
+
 	s_vector_t arguments;
 	s_vector_init(&arguments);
 
@@ -375,6 +389,8 @@ void command_parse(
 	context_destroy(&command_context);
 
 	s_vector_destroy(&arguments);
+
+	parse_context_destroy(&parse_context);
 }
 
 void command_destroy(command_t *command) {

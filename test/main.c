@@ -39,6 +39,7 @@ static void test_help(fixture_t *fixture, gconstpointer _) {
 	if(g_test_subprocess()) {
 		const char *argv[] = { "program", "-h" };
 		command_parse(&fixture->command, NULL, 2, argv);
+		exit(EXIT_FAILURE);
 	}
 
 	g_test_trap_subprocess(NULL, 0, 0);
@@ -272,9 +273,14 @@ static void duplicate_option_set(context_t *context) {
 }
 
 static void test_option_duplicate(fixture_t *fixture, gconstpointer _) {
-	command_flag(&fixture->command, 'a', "arbitrary", "Arbitrary flag.", duplicate_option_set);
-	const char *argv[] = { "program", "-aa" };
-	command_parse(&fixture->command, NULL, 2, argv);
+	if(g_test_subprocess()) {
+		command_flag(&fixture->command, 'a', "arbitrary", "Arbitrary flag.", duplicate_option_set);
+		const char *argv[] = { "program", "-aa" };
+		command_parse(&fixture->command, NULL, 2, argv);
+	}
+
+	g_test_trap_subprocess(NULL, 0, 0);
+	g_test_trap_assert_failed();
 }
 
 int main(int argc, char **argv) {
