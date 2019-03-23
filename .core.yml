@@ -12,7 +12,9 @@ steps:
 - name: test
   image: pfeifenjoy/argparse
   commands:
-  - ctest --verbose build
+  - cd build
+  - ctest --verbose .
+  - cd ..
 
 - name: memcheck
   image: pfeifenjoy/argparse
