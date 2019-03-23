@@ -12,6 +12,7 @@ typedef struct {
 
 void arguments_init(arguments_t *);
 void arguments_add(arguments_t *, argument_t);
+bool arguments_equal(const arguments_t *, const arguments_t *);
 void arguments_destroy(arguments_t *);
 
 #endif /* end of include guard: ARGUMENTS_H_XUL1CTIC */

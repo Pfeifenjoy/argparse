@@ -52,8 +52,10 @@ void option_add_optional_argument(
 bool option_equal(const option_t *a, const option_t *b) {
 	return a->abbreviation == b->abbreviation
 		&& strcmp(a->long_name, b->long_name) == 0
-		&& strcmp(a->description, b->description) == 0;
-		//TODO
+		&& strcmp(a->description, b->description) == 0
+		&& a->set == b->set
+		&& arguments_equal(&a->required_arguments, &b->required_arguments)
+		&& arguments_equal(&a->optional_arguments, &b->optional_arguments);
 }
 
 void option_destroy(option_t *option) {
