@@ -36,7 +36,7 @@ void option_add_required_argument(
 	) {
 	argument_t argument;
 	argument_init(&argument, name, description);
-	arguments_add(&option->required_arguments, argument);
+	arguments_add(&option->required_arguments, &argument);
 }
 
 void option_add_optional_argument(
@@ -46,7 +46,7 @@ void option_add_optional_argument(
 	) {
 	argument_t argument;
 	argument_init(&argument, name, description);
-	arguments_add(&option->optional_arguments, argument);
+	arguments_add(&option->optional_arguments, &argument);
 }
 
 bool option_equal(const option_t *a, const option_t *b) {

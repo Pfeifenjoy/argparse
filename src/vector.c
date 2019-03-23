@@ -2,7 +2,7 @@
 #include "argparse/memory.h"
 
 #ifndef VECTOR_BLOCK_SIZE
-#define VECTOR_BLOCK_SIZE 64
+#define VECTOR_BLOCK_SIZE 16
 #endif
 
 #include "assert.h"
@@ -16,17 +16,17 @@ void generic_vector_init(generic_vector_t *vector, size_t element_size) {
 }
 
 static void add_block(generic_vector_t *vector) {
-	size_t length = vector->length / VECTOR_BLOCK_SIZE
-		+ (vector->length % VECTOR_BLOCK_SIZE ? 1 : 0);
+	size_t length = (vector->length + 1) / VECTOR_BLOCK_SIZE
+		+ ((vector->length + 1) % VECTOR_BLOCK_SIZE ? 1 : 0);
 	vector->blocks = reallocate(vector->blocks, length, sizeof(void *));
 	vector->blocks[length - 1] = allocate(VECTOR_BLOCK_SIZE, vector->element_size);
 }
 
 void *generic_vector_add(generic_vector_t *vector, const void *element) {
-	vector->length++;
-	if(vector->length % VECTOR_BLOCK_SIZE == 1) {
+	if(vector->length % VECTOR_BLOCK_SIZE == 0) {
 		add_block(vector);
 	}
+	vector->length++;
 	void *entry = generic_vector_get(vector, vector->length - 1);
 	memcpy(entry, element, vector->element_size);
 	return entry;
@@ -46,7 +46,7 @@ void generic_vector_destroy(generic_vector_t *vector) {
 	size_t length = vector->length / VECTOR_BLOCK_SIZE
 		+ (vector->length % VECTOR_BLOCK_SIZE ? 1 : 0);
 	for(size_t i = 0; i < length; ++i) {
-		free(*vector->blocks);
+		free(vector->blocks[i]);
 	}
 	free(vector->blocks);
 }

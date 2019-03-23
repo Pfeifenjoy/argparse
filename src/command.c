@@ -77,22 +77,23 @@ static void command_option_parse_arguments(
 	s_vector_init(&arguments);
 
 	//required arguments
-	for(size_t i = 0; i < option->required_arguments.size; ++i) {
+	for(size_t i = 0; i < option->required_arguments.length; ++i) {
 		const char *current = context->argv[context->position + i];
 
 		if(context->position + i >= context->argc) {
 			fprintf(stderr, "Missing argument <%s> for --%s.",
-					option->required_arguments.data[i].name, option->long_name);
+					arguments_get_const(&option->required_arguments, i)->name,
+					option->long_name);
 			exit(EXIT_FAILURE);
 		}
 
 		option_check_argument(current);
 		s_vector_add(&arguments, current);
 	}
-	context->position += option->required_arguments.size;
+	context->position += option->required_arguments.length;
 
 	//option arguments
-	for(size_t i = 0; i < option->optional_arguments.size; ++i) {
+	for(size_t i = 0; i < option->optional_arguments.length; ++i) {
 		const char *current = context->argv[context->position + i];
 
 		if(context->position + i >= context->argc || current[0] == '-') {
@@ -169,20 +170,22 @@ static void command_parse_option(
 
 static void fprint_option_head(FILE *out, const option_t *option) {
 	size_t length = strlen(option->long_name);
-	for(size_t i = 0; i < option->required_arguments.size; ++i) {
-		length += strlen(option->required_arguments.data[i].name) + 3;
+	for(size_t i = 0; i < option->required_arguments.length; ++i) {
+		length += strlen(arguments_get_const(&option->required_arguments, i)->name) + 3;
 	}
-	for(size_t i = 0; i < option->optional_arguments.size; ++i) {
-		length += strlen(option->optional_arguments.data[i].name) + 3;
+	for(size_t i = 0; i < option->optional_arguments.length; ++i) {
+		length += strlen(arguments_get_const(&option->optional_arguments, i)->name) + 3;
 	}
 	assert(strlen(option->long_name) < MAX_OPTION_NAME);
 
 	fprintf(out, "  -%c, --%s", option->abbreviation, option->long_name);
-	for(size_t i = 0; i < option->required_arguments.size; ++i) {
-		fprintf(out, " <%s>", option->required_arguments.data[i].name);
+	for(size_t i = 0; i < option->required_arguments.length; ++i) {
+		fprintf(out, " <%s>",
+				arguments_get_const(&option->required_arguments, i)->name);
 	}
-	for(size_t i = 0; i < option->optional_arguments.size; ++i) {
-		fprintf(out, " [%s]", option->optional_arguments.data[i].name);
+	for(size_t i = 0; i < option->optional_arguments.length; ++i) {
+		fprintf(out, " [%s]",
+				arguments_get_const(&option->optional_arguments, i)->name);
 	}
 	fprintf(out, "%*s", (int) (MAX_OPTION_NAME - length), "");
 }
@@ -240,11 +243,13 @@ void command_print_help(const command_t *command) {
 		, command->name
 	);
 
-	for(size_t i = 0; i < command->required_arguments.size; ++i) {
-		printf(" <%s>", command->required_arguments.data[i].name);
+	for(size_t i = 0; i < command->required_arguments.length; ++i) {
+		printf(" <%s>",
+				arguments_get_const(&command->required_arguments, i)->name);
 	}
-	for(size_t i = 0; i < command->optional_arguments.size; ++i) {
-		printf(" [%s]", command->optional_arguments.data[i].name);
+	for(size_t i = 0; i < command->optional_arguments.length; ++i) {
+		printf(" [%s]",
+				arguments_get_const(&command->optional_arguments, i)->name);
 	}
 	if(command->last_arguments.name[0] != '\0') {
 		printf(" [...%s]", command->last_arguments.name);
@@ -309,7 +314,7 @@ void command_add_required_argument(
 		command_t *command,
 		argument_t argument
 	) {
-	arguments_add(&command->required_arguments, argument);
+	arguments_add(&command->required_arguments, &argument);
 }
 
 void command_optional_argument(
@@ -326,7 +331,7 @@ void command_add_optional_argument(
 		command_t *command,
 		argument_t argument
 	) {
-	arguments_add(&command->optional_arguments, argument);
+	arguments_add(&command->optional_arguments, &argument);
 }
 
 void command_last_arguments(command_t *command, const char *name, const char *description) {
@@ -361,7 +366,7 @@ void command_parse(
 			command_parse_option(command, &parse_context);
 		} else {
 			if(arguments.length >=
-				command->optional_arguments.size + command->required_arguments.size
+				command->optional_arguments.length + command->required_arguments.length
 				&& command->last_arguments.name[0] == '\0') {
 				printf("Warning - Unexpected argument: %s\n", current);
 			}
@@ -370,9 +375,9 @@ void command_parse(
 		}
 	}
 
-	if(arguments.length < command->required_arguments.size) {
+	if(arguments.length < command->required_arguments.length) {
 		fprintf(stderr, "Missing required argument <%s>.\n",
-				command->required_arguments.data[arguments.length].name);
+			arguments_get_const(&command->required_arguments, arguments.length)->name);
 		exit(EXIT_FAILURE);
 	}
 

@@ -2,23 +2,27 @@
 #include "argparse/memory.h"
 
 void arguments_init(arguments_t *arguments) {
-	arguments->data = NULL;
-	arguments->size = 0;
+	generic_vector_init(arguments, sizeof(argument_t));
 }
 
-void arguments_add(arguments_t *arguments, argument_t argument) {
-	arguments->size++;
-	arguments->data =
-		reallocate(arguments->data, arguments->size, sizeof(argument_t));
-	arguments->data[arguments->size - 1] = argument;
+void arguments_add(arguments_t *arguments, argument_t *argument) {
+	generic_vector_add(arguments, argument);
+}
+
+argument_t *arguments_get(arguments_t *arguments, size_t i) {
+	return generic_vector_get(arguments, i);
+}
+
+const argument_t *arguments_get_const(const arguments_t *arguments, size_t i) {
+	return generic_vector_get_const(arguments, i);
 }
 
 bool arguments_equal(const arguments_t *lhs, const arguments_t *rhs) {
-	if(lhs->size != rhs->size) {
+	if(lhs->length != rhs->length) {
 		return false;
 	}
-	for(size_t i = 0; i < lhs->size; ++i) {
-		if(!argument_equal(lhs->data + i, rhs->data +i)) {
+	for(size_t i = 0; i < lhs->length; ++i) {
+		if(!argument_equal(arguments_get_const(lhs, i), arguments_get_const(rhs, i))) {
 			return false;
 		}
 	}
@@ -26,6 +30,5 @@ bool arguments_equal(const arguments_t *lhs, const arguments_t *rhs) {
 }
 
 void arguments_destroy(arguments_t *arguments) {
-	arguments->size = 0;
-	free(arguments->data);
+	generic_vector_destroy(arguments);
 }

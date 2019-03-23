@@ -124,6 +124,7 @@ static void handle_option_with_parameter(context_t *context) {
 
 static void test_option_parameter(fixture_t *fixture, gconstpointer _) {
 	option_t option;
+
 	option_init(&option, 'o', "option", "random option", handle_option_with_parameter);
 	option_add_required_argument(&option, "arg1", "random argument");
 	command_add_option(&fixture->command, option);
