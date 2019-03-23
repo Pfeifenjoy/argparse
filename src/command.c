@@ -233,10 +233,6 @@ void command_init(
 	command_flag(command, 'V', "version", "Display the version.", version_set);
 }
 
-static void print_option(const option_t *option, void *_out) {
-	fprint_option((FILE *) _out, option);
-}
-
 void command_print_help(const command_t *command) {
 	printf(
 		"\n"
@@ -261,7 +257,9 @@ void command_print_help(const command_t *command) {
 		"\n"
 	);
 
-	options_for_each(&command->options, print_option, stdout);
+	for(size_t i = 0; i < command->options.data.length; ++i) {
+		fprint_option(stdout, options_get(&command->options, i));
+	}
 	printf("\n");
 }
 
@@ -294,7 +292,7 @@ void command_option(
 }
 
 void command_add_option(command_t *command, option_t option) {
-	options_add(&command->options, option);
+	options_add(&command->options, &option);
 }
 
 void command_require_argument(

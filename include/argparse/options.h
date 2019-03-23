@@ -11,10 +11,10 @@ typedef struct options {
 } options_t;
 
 void options_init(options_t *);
-void options_add(options_t *, option_t);
+option_t *options_add(options_t *, option_t *);
+const option_t *options_get(const options_t *, size_t);
 const option_t *options_find_by_abbreviation(const options_t *, char);
 const option_t *options_find_by_long_name(const options_t *, const char *);
-void options_for_each(const options_t *, void(*)(const option_t *, void *), void *);
 void options_destroy(options_t *);
 
 #endif /* end of include guard: OPTIONS_H_BKNLKQUC */

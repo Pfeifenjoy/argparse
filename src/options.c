@@ -5,22 +5,60 @@
 #include "stdio.h"
 #include "string.h"
 
+
+static int abbreviation_compare(const void *_lhs, const void *_rhs) {
+	const option_t *lhs = *(const option_t **) _lhs;
+	const option_t *rhs = *(const option_t **) _rhs;
+	int result = strncmp(&lhs->abbreviation, &rhs->abbreviation, 1);
+
+#ifndef NDEBUG
+	if(result == 0) {
+		assert(option_equal(lhs, rhs));
+	}
+#endif
+
+	return result;
+}
+
+static int long_name_compare(const void *_lhs, const void *_rhs) {
+	const option_t *lhs = *(const option_t **) _lhs;
+	const option_t *rhs = *(const option_t **) _rhs;
+	int result = strcmp(lhs->long_name, rhs->long_name);
+
+#ifndef NDEBUG
+	if(result == 0) {
+		assert(option_equal(lhs, rhs));
+	}
+#endif
+
+	return result;
+}
+
 void options_init(options_t *options) {
 	generic_vector_init(&options->data, sizeof(option_t));
 	generic_set_init(&options->abbreviation_index,
-			sizeof(option_t *), option_abbreviation_compare);
+			sizeof(option_t *), abbreviation_compare);
 	generic_set_init(&options->long_name_index,
-			sizeof(option_t *), option_long_name_compare);
+			sizeof(option_t *), long_name_compare);
 }
 
-void options_add(options_t *options, option_t option) {
-	if(options_find_by_abbreviation(options, option.abbreviation)
-		|| options_find_by_long_name(options, option.long_name)) {
-		return;
+option_t *options_add(options_t *options, option_t *option) {
+
+#ifndef NDEBUG
+	if(options_find_by_abbreviation(options, option->abbreviation)
+		|| options_find_by_long_name(options, option->long_name)) {
+		assert(false && "Cannot add option twice");
 	}
-	option_t *option_copy = generic_vector_add(&options->data, &option);
+#endif
+
+	option_t *option_copy = generic_vector_add(&options->data, option);
 	generic_set_add(&options->abbreviation_index, &option_copy);
 	generic_set_add(&options->long_name_index, &option_copy);
+	return option_copy;
+}
+
+const option_t *options_get(const options_t *options, size_t i) {
+	return generic_vector_get_const(&options->data, i);
 }
 
 static int find_abbreviation(const void *_lhs, const void *_rhs) {
@@ -57,12 +95,10 @@ const option_t *options_find_by_long_name(
 	return *result;
 }
 
-void options_for_each(const options_t *options,
-		void(*f)(const option_t *, void *), void *c) {
-	generic_vector_for_each(&options->data, (void (*)(const void *, void *)) f, c);
-}
-
 void options_destroy(options_t *options) {
+	for(size_t i = 0; i < options->data.length; ++i) {
+		option_destroy(generic_vector_get(&options->data, i));
+	}
 	generic_vector_destroy(&options->data);
 	generic_set_destroy(&options->abbreviation_index);
 	generic_set_destroy(&options->long_name_index);

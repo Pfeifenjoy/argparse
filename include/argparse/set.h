@@ -24,8 +24,6 @@ bool generic_set_has(const generic_set_t *, const void *);
 
 const void *generic_set_find(const generic_set_t *, const void *, compare_t);
 
-void generic_set_for_each(const generic_set_t *, void(*)(const void *, void *), void *);
-
 void generic_set_destroy(generic_set_t *);
 
 #endif /* end of include guard: SET_H_GORERFX6 */

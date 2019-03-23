@@ -1,7 +1,17 @@
 #include "argparse/option.h"
 
 #include "assert.h"
+#include "ctype.h"
 #include "string.h"
+
+static bool no_witespaces(const char *text) {
+	for(size_t i = 0; text[i] != '\0'; ++i) {
+		if(isspace(text[i])) {
+			return false;
+		}
+	}
+	return true;
+}
 
 void option_init(
 		option_t *option,
@@ -10,6 +20,7 @@ void option_init(
 		const char *description,
 		option_set_t set
 	) {
+	assert(no_witespaces(long_name));
 	option->abbreviation = abbreviation;
 	option->long_name = long_name;
 	option->description = description;
@@ -43,33 +54,6 @@ bool option_equal(const option_t *a, const option_t *b) {
 		&& strcmp(a->long_name, b->long_name) == 0
 		&& strcmp(a->description, b->description) == 0;
 		//TODO
-}
-
-int option_abbreviation_compare(const void *_lhs, const void *_rhs) {
-	const option_t *lhs = *(const option_t **) _lhs;
-	const option_t *rhs = *(const option_t **) _rhs;
-	int result = strncmp(&lhs->abbreviation, &rhs->abbreviation, 1);
-
-#ifndef NDEBUG
-	if(result == 0) {
-		assert(option_equal(lhs, rhs));
-	}
-#endif
-
-	return result;
-}
-int option_long_name_compare(const void *_lhs, const void *_rhs) {
-	const option_t *lhs = *(const option_t **) _lhs;
-	const option_t *rhs = *(const option_t **) _rhs;
-	int result = strcmp(lhs->long_name, rhs->long_name);
-
-#ifndef NDEBUG
-	if(result == 0) {
-		assert(option_equal(lhs, rhs));
-	}
-#endif
-
-	return result;
 }
 
 void option_destroy(option_t *option) {

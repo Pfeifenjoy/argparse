@@ -1,10 +1,11 @@
 #include "argparse/set.h"
 #include "argparse/memory.h"
 
-#include "stdlib.h"
+#include "errno.h"
 #include "search.h"
-#include "string.h"
 #include "stdio.h"
+#include "stdlib.h"
+#include "string.h"
 
 void generic_set_init(generic_set_t *set, uint16_t element_size, compare_t compare) {
 	set->root = NULL;
@@ -17,12 +18,11 @@ void generic_set_add(generic_set_t *set, void *element) {
 		return;
 	}
 	void *element_copy = generic_vector_add(&set->data, element);
-	void **result = (void **) tsearch(element_copy, &set->root, set->compare);
+	void **result = tsearch(element_copy, &set->root, set->compare);
 	if(result == NULL) {
-		fprintf(stderr, "Out of memory.");
+		fprintf(stderr, "%s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	*result = element_copy;
 }
 
 const void *generic_set_find(
@@ -42,12 +42,6 @@ bool generic_set_has(const generic_set_t *set, const void *element) {
 	return generic_set_get_const(set, element) != NULL;
 }
 
-void generic_set_for_each(
-		const generic_set_t *set, void(*f)(const void *, void *), void *c) {
-	generic_vector_for_each(&set->data, f, c);
-}
-
 void generic_set_destroy(generic_set_t *set) {
 	generic_vector_destroy(&set->data);
-	free(set->root);
 }
