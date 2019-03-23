@@ -99,7 +99,7 @@ void options_destroy(options_t *options) {
 	for(size_t i = 0; i < options->data.length; ++i) {
 		option_destroy(generic_vector_get(&options->data, i));
 	}
-	generic_vector_destroy(&options->data);
 	generic_set_destroy(&options->abbreviation_index);
 	generic_set_destroy(&options->long_name_index);
+	generic_vector_destroy(&options->data);
 }

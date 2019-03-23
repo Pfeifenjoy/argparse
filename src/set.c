@@ -19,6 +19,7 @@ void generic_set_add(generic_set_t *set, void *element) {
 	}
 	void *element_copy = generic_vector_add(&set->data, element);
 	void **result = tsearch(element_copy, &set->root, set->compare);
+
 	if(result == NULL) {
 		fprintf(stderr, "%s\n", strerror(errno));
 		exit(EXIT_FAILURE);
@@ -43,5 +44,8 @@ bool generic_set_has(const generic_set_t *set, const void *element) {
 }
 
 void generic_set_destroy(generic_set_t *set) {
+	for(size_t i = 0; i < set->data.length; ++i) {
+		tdelete(generic_vector_get(&set->data, i), &set->root, set->compare);
+	}
 	generic_vector_destroy(&set->data);
 }
