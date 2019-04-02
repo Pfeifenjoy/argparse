@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.5)
-project(Argparse LANGUAGES C)
+project(argparse LANGUAGES C)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
 include(require-git)
 
 #Library
-add_library(Argparse
+add_library(argparse
 	src/command.c
 	src/argument.c
 	src/arguments.c
@@ -17,7 +17,7 @@ add_library(Argparse
 	src/set.c
 	src/context.c
 )
-target_include_directories(Argparse PUBLIC 
+target_include_directories(argparse PUBLIC 
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include>
 )
@@ -30,7 +30,7 @@ endif()
 
 
 #Install
-install(TARGETS Argparse EXPORT ArgparseTargets
+install(TARGETS argparse EXPORT argparseTargets
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION bin
@@ -38,24 +38,24 @@ install(TARGETS Argparse EXPORT ArgparseTargets
 )
 install(DIRECTORY include/argparse DESTINATION include)
 
-install(EXPORT ArgparseTargets
-	FILE ArgparseTargets.cmake
-	NAMESPACE Argparse::
-	DESTINATION lib/cmake/Argparse
+install(EXPORT argparseTargets
+	FILE argparseTargets.cmake
+	NAMESPACE argparse::
+	DESTINATION lib/cmake/argparse
 )
 
 include(CMakePackageConfigHelpers)
-write_basic_package_version_file("ArgparseConfigVersion.cmake"
-	VERSION ${Argparse_VERSION}
+write_basic_package_version_file("argparseConfigVersion.cmake"
+	VERSION ${argparse_VERSION}
 	COMPATIBILITY SameMajorVersion
 )
 
 install(
 	FILES
-		"cmake/ArgparseConfig.cmake"
-		"${CMAKE_CURRENT_BINARY_DIR}/ArgparseConfigVersion.cmake"
+		"cmake/argparseConfig.cmake"
+		"${CMAKE_CURRENT_BINARY_DIR}/argparseConfigVersion.cmake"
 	DESTINATION
-		lib/cmake/Argparse
+		lib/cmake/argparse
 )
 
 include(pack)
