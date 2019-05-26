@@ -16,6 +16,7 @@ add_library(argparse
 	src/vector.c
 	src/set.c
 	src/context.c
+	src/helper-functions.c
 )
 target_include_directories(argparse PUBLIC 
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
