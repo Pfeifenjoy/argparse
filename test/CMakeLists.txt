@@ -31,3 +31,10 @@ add_test(
 	NAME argparse_options
 	COMMAND argparse_options_tests
 )
+
+add_executable(argparse_subcommands_tests subcommands.c)
+target_link_libraries(argparse_subcommands_tests PRIVATE argparse)
+add_test(
+	NAME argparse_subcommands
+	COMMAND argparse_subcommands_tests
+)

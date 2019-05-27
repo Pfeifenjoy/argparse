@@ -17,11 +17,17 @@ add_library(argparse
 	src/set.c
 	src/context.c
 	src/helper-functions.c
+	src/subcommands.c
 )
 target_include_directories(argparse PUBLIC 
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 	$<INSTALL_INTERFACE:include>
 )
+
+# Dependencies
+find_package(PkgConfig REQUIRED)
+pkg_search_module(glib REQUIRED IMPORTED_TARGET glib-2.0)
+target_link_libraries(argparse PUBLIC PkgConfig::glib)
 
 if(CMAKE_BUILD_TYPE MATCHES "Debug")
 	enable_testing()

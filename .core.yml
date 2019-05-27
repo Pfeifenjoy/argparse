@@ -22,6 +22,7 @@ steps:
   - valgrind --leak-check=yes --error-exitcode=1 --suppressions=./.valgrind-suppressions ./build/test/argparse_tests
   - valgrind --leak-check=yes --error-exitcode=1 ./build/test/argparse_set_tests
   - valgrind --leak-check=yes --error-exitcode=1 ./build/test/argparse_options_tests
+  - valgrind --leak-check=yes --error-exitcode=1 ./build/test/argparse_subcommands_tests
 
 - name: linux
   image: pfeifenjoy/argparse

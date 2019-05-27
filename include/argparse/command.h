@@ -70,6 +70,8 @@ void command_add_optional_argument(
 	argument_t
 );
 
+void command_add_subcommand(command_t *, command_t *);
+
 void command_last_arguments(
 	command_t *,
 	const char *,

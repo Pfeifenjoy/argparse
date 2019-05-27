@@ -334,6 +334,10 @@ void command_add_optional_argument(
 	arguments_add(&command->optional_arguments, &argument);
 }
 
+void command_add_subcommand(command_t *command, command_t *subcommand) {
+	
+}
+
 void command_last_arguments(command_t *command, const char *name, const char *description) {
 	command->last_arguments.name = name;
 	command->last_arguments.description = description;
